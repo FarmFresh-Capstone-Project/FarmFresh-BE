@@ -1,12 +1,36 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
-const bcrypt = require('bcrypt');
 require('dotenv').config();
 
 const userHandler = express.Router();
 
-userHandler.get('/profile', async (req, res) => {
+userHandler.get('/users', async (req, res) => {
+  try {
+    const users = await admin.firestore().collection('users').get();
+    const userList = [];
+    users.forEach((user) => {
+      userList.push({
+        idUser: user.id,
+        name: user.data().name,
+        image: user.data().image,
+        username: user.data().username,
+        email: user.data().email,
+        password: user.data().password,
+        address: user.data().address,
+        hobbies: user.data().hobbies,
+        job: user.data().job,
+        skill: user.data().skill,
+      });
+    });
+    res.status(200).json(userList);
+  } catch (error) {
+    console.error('Kesalahan mengambil user:', error);
+    res.status(500).json({ error: 'Kesalahan Server Internal' });
+  }
+});
+
+userHandler.get('/profiles' , async (req, res) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
@@ -15,15 +39,15 @@ userHandler.get('/profile', async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        const userId = decodedToken.userId;
+        constuserId = decodedToken.userId;
 
-        const userDoc = await admin.firestore().collection('user').doc(userId).get();
+        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
-          return res.status(404).json({ error: 'User tidak ditemukan' });
+            return res.status(404).json({ error: 'User tidak ditemukan' });
         }
-    
-        const user = userDoc.data();
-    
+
+        constuser =userDoc.data();
+
         res.status(200).json(user);
     } catch (error) {
         console.error('Kesalahan mendapatkan data pengguna:', error);
@@ -31,7 +55,7 @@ userHandler.get('/profile', async (req, res) => {
     }
 });
 
-userHandler.put('/profile', async (req, res) => {
+userHandler.put('/profiles' , async (req, res) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
@@ -40,25 +64,31 @@ userHandler.put('/profile', async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        const userId = decodedToken.userId;
+        constuserId = decodedToken.userId;
 
-        const { email, password } = req.body;
+        const { name, address, hobbies, job, skill } = req.body;
 
-        const userDoc = await admin.firestore().collection('user').doc(userId).get();
+        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
-          return res.status(404).json({ error: 'User tidak ditemukan' });
+            return res.status(404).json({ error: 'User tidak ditemukan' });
         }
 
-        await admin.firestore().collection('user').doc(userId).update({ email, password });
+        await admin.firestore().collection('users').doc(userId).update({
+            name,
+            address,
+            hobbies,
+            job,
+            skill
+        });
 
-        res.status(200).json({ message: 'Profile updated successfully' });
+        res.status(200).json({ message: 'Profil berhasil diperbarui' });
     } catch (error) {
         console.error('Kesalahan memperbarui profil pengguna:', error);
         res.status(500).json({ error: 'Kesalahan Server Internal' });
     }
 });
 
-userHandler.put('/put/password', async (req, res) => {
+userHandler.delete('/profiles' , async (req, res) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
@@ -67,31 +97,22 @@ userHandler.put('/put/password', async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        const userId = decodedToken.userId;
+        constuserId = decodedToken.userId;
 
-        const { oldPassword, newPassword } = req.body;
-
-        const userDoc = await admin.firestore().collection('user').doc(userId).get();
+        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
-          return res.status(404).json({ error: 'User tidak ditemukan' });
+            return res.status(404).json({ error: 'User tidak ditemukan' });
         }
 
-        const userData = userDoc.data();
+        await admin.firestore().collection('users').doc(userId).delete();
 
-        const isPasswordValid = await bcrypt.compare(oldPassword, userData.password);
-        if (!isPasswordValid) {
-        return res.status(401).json({ error: 'Kata sandi lama tidak valid' });
-        }
+        await admin.auth().deleteUser(userId);
 
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-        await admin.firestore().collection('user').doc(userId).update({ password: hashedNewPassword });
-
-        res.status(200).json({ message: 'Kata sandi berhasil diperbarui' });
+        res.status(200).json({ message: 'User berhasil dihapus' });
     } catch (error) {
-        console.error('Kesalahan memperbarui kata sandi:', error);
+        console.error('Kesalahan menghapus pengguna:', error);
         res.status(500).json({ error: 'Kesalahan Server Internal' });
     }
 });
 
-module.exports = userHandler;
+module.exports =userHandler;

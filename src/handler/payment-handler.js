@@ -7,7 +7,7 @@ const paymentHandler = express.Router();
 
 paymentHandler.use(bodyParser.json());
 
-paymentHandler.get('/payment', async (req, res) => {
+paymentHandler.get('/payments', async (req, res) => {
   try {
     const payments = await admin.firestore().collection('payments').get();
     const paymentList = [];
@@ -28,7 +28,7 @@ paymentHandler.get('/payment', async (req, res) => {
   }
 });
 
-paymentHandler.get('/payment/:id', async (req, res) => {
+paymentHandler.get('/payments/:id', async (req, res) => {
   try {
     const paymentId = req.params.id;
     const payment = await admin.firestore().collection('payments').doc(paymentId).get();
@@ -49,7 +49,7 @@ paymentHandler.get('/payment/:id', async (req, res) => {
   }
 });
 
-paymentHandler.post('/payment', async (req, res) => {
+paymentHandler.post('/payments', async (req, res) => {
   try {
     const { name, quantity, price, total, description } = req.body;
 
@@ -67,7 +67,7 @@ paymentHandler.post('/payment', async (req, res) => {
   }
 });
 
-paymentHandler.put('/payment/:id', async (req, res) => {
+paymentHandler.put('/payments/:id', async (req, res) => {
   try {
     const paymentId = req.params.id;
     const { name, quantity, price, total, description } = req.body;
@@ -96,7 +96,7 @@ paymentHandler.put('/payment/:id', async (req, res) => {
   }
 });
 
-paymentHandler.delete('/payment/:id', async (req, res) => {
+paymentHandler.delete('/payments/:id', async (req, res) => {
   try {
     const paymentId = req.params.id;
     const payment = await admin.firestore().collection('payments').doc(paymentId).delete();

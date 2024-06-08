@@ -19,7 +19,7 @@ loginHandler.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Email atau kata sandi salah' });
         }
 
-        const user = await admin.firestore().collection('user').doc(existingUser.uid).get();
+        const user = await admin.firestore().collection('users').doc(existingUser.uid).get();
         if (!user.exists) {
             return res.status(401).json({ error: 'User tidak ditemukan' });
         }

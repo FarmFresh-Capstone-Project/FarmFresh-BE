@@ -14,12 +14,12 @@ admin.initializeApp({
 registerHandler.post('/register', async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        
+
         const existingUser = await admin.auth().getUserByEmail(email).catch(() => null);
         if (existingUser) {
             return res.status(400).json({ error: 'Email sudah terdaftar' });
         }
-        
+
         const user = await admin.auth().createUser({
             email,
             password,
@@ -28,10 +28,15 @@ registerHandler.post('/register', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        await admin.firestore().collection('user').doc(user.uid).set({
+        await admin.firestore().collection('users').doc(user.uid).set({
             username,
             email,
             password: hashedPassword,
+            name: '',
+            address: '',
+            hobbies: '',
+            job: '',
+            skill: ''
         });
 
         res.status(201).json({ message: 'Registrasi berhasil', user });

@@ -8,9 +8,9 @@ const productHandler = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-productHandler.get('/product', async (req, res) => {
+productHandler.get('/products', async (req, res) => {
   try {
-    const products = await admin.firestore().collection('product').get();
+    const products = await admin.firestore().collection('products').get();
     const productList = [];
     products.forEach((product) => {
       productList.push({
@@ -21,6 +21,7 @@ productHandler.get('/product', async (req, res) => {
         description: product.data().description,
         rate: product.data().rate,
         category: product.data().category,
+        type: product.data().type,
         idFarm: product.data().idFarm,
       });
     });
@@ -31,10 +32,10 @@ productHandler.get('/product', async (req, res) => {
   }
 });
 
-productHandler.get('/product/:id', async (req, res) => {
+productHandler.get('/products/:id', async (req, res) => {
   try {
     const productId = req.params.id;
-    const product = await admin.firestore().collection('product').doc(productId).get();
+    const product = await admin.firestore().collection('products').doc(productId).get();
     if (!product.exists) {
       return res.status(404).json({ error: 'Produk tidak ditemukan' });
     }
@@ -46,6 +47,7 @@ productHandler.get('/product/:id', async (req, res) => {
       description: product.data().description,
       rate: product.data().rate,
       category: product.data().category,
+      type: product.data().type,
       idFarm: product.data().idFarm,
     });
   } catch (error) {
@@ -54,9 +56,34 @@ productHandler.get('/product/:id', async (req, res) => {
   }
 });
 
-productHandler.post('/product', upload.single('image'), async (req, res) => {
+productHandler.get('/products/type/:type', async (req, res) => {
   try {
-    const { name, price, description, rate, category, idFarm } = req.body;
+    const type = req.params.type;
+    const products = await admin.firestore().collection('products').where('type', '==', type).get();
+    const productList = [];
+    products.forEach((product) => {
+      productList.push({
+        idProduct: product.id,
+        name: product.data().name,
+        image: product.data().image,
+        price: product.data().price,
+        description: product.data().description,
+        rate: product.data().rate,
+        category: product.data().category,
+        type: product.data().type,
+        idFarm: product.data().idFarm,
+      });
+    });
+    res.status(200).json(productList);
+  } catch (error) {
+    console.error('Kesalahan mengambil produk berdasarkan jenis:', error);
+    res.status(500).json({ error: 'Kesalahan Server Internal' });
+  }
+});
+
+productHandler.post('/products', upload.single('image'), async (req, res) => {
+  try {
+    const { name, price, description, rate, category, type, idFarm } = req.body;
     const file = req.file;
 
     const fileName = `${Date.now()}_${file.originalname}`;
@@ -71,13 +98,14 @@ productHandler.post('/product', upload.single('image'), async (req, res) => {
 
     const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
 
-    const product = await admin.firestore().collection('product').add({
+    const product = await admin.firestore().collection('products').add({
       name,
       image: imageUrl,
       price,
       description,
       rate,
       category,
+      type,
       idFarm,
     });
     res.status(201).json({ message: 'Produk berhasil ditambahkan', id: product.id });
@@ -87,10 +115,10 @@ productHandler.post('/product', upload.single('image'), async (req, res) => {
   }
 });
 
-productHandler.put('/product/:id', upload.single('image'), async (req, res) => {
+productHandler.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
     const productId = req.params.id;
-    const { name, price, description, rate, category, idFarm } = req.body;
+    const { name, price, description, rate, category, type, idFarm } = req.body;
     const file = req.file;
 
     let imageUrl;
@@ -109,7 +137,7 @@ productHandler.put('/product/:id', upload.single('image'), async (req, res) => {
       imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
     }
 
-    const productDoc = await admin.firestore().collection('product').doc(productId).get();
+    const productDoc = await admin.firestore().collection('products').doc(productId).get();
     if (!productDoc.exists) {
       return res.status(404).json({ error: 'Produk tidak ditemukan' });
     }
@@ -122,6 +150,7 @@ productHandler.put('/product/:id', upload.single('image'), async (req, res) => {
       description: description || existingProductData.description,
       rate: rate || existingProductData.rate,
       category: category || existingProductData.category,
+      type: type || existingProductData.type,
       idFarm: idFarm || existingProductData.idFarm,
       image: imageUrl || existingProductData.image,
     };
@@ -132,7 +161,7 @@ productHandler.put('/product/:id', upload.single('image'), async (req, res) => {
       }
     });
 
-    await admin.firestore().collection('product').doc(productId).update(updatedProductData);
+    await admin.firestore().collection('products').doc(productId).update(updatedProductData);
 
     res.status(200).json({ message: 'Produk berhasil diperbarui' });
   } catch (error) {
@@ -141,10 +170,10 @@ productHandler.put('/product/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-productHandler.delete('/product/:id', async (req, res) => {
+productHandler.delete('/products/:id', async (req, res) => {
   try {
     const productId = req.params.id;
-    const product = await admin.firestore().collection('product').doc(productId).delete();
+    const product = await admin.firestore().collection('products').doc(productId).delete();
     res.status(200).json({ message: 'Produk berhasil dihapus' });
   } catch (error) {
     console.error('Kesalahan menghapus produk:', error);

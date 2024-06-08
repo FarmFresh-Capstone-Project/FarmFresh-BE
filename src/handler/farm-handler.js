@@ -8,13 +8,13 @@ const farmHandler = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-farmHandler.get('/farm', async (req, res) => {
+farmHandler.get('/farmers', async (req, res) => {
   try {
-    const farms = await admin.firestore().collection('farm').get();
+    const farms = await admin.firestore().collection('farmers').get();
     const farmList = [];
     farms.forEach((farm) => {
       farmList.push({
-        idfarm: farm.id,
+        idFarm: farm.id,
         name: farm.data().name,
         image: farm.data().image,
         location: farm.data().location,
@@ -22,20 +22,20 @@ farmHandler.get('/farm', async (req, res) => {
     });
     res.status(200).json(farmList);
   } catch (error) {
-    console.error('Kesalahan mengambil Pertanian:', error);
+    console.error('Kesalahan mengambil pertanian:', error);
     res.status(500).json({ error: 'Kesalahan Server Internal' });
   }
 });
 
-farmHandler.get('/farm/:id', async (req, res) => {
+farmHandler.get('/farmers/:id', async (req, res) => {
   try {
     const farmId = req.params.id;
-    const farm = await admin.firestore().collection('farm').doc(farmId).get();
+    const farm = await admin.firestore().collection('farmers').doc(farmId).get();
     if (!farm.exists) {
       return res.status(404).json({ error: 'Pertanian tidak ditemukan' });
     }
     res.status(200).json({
-      idfarm: farm.id,
+      idFarm: farm.id,
       name: farm.data().name,
       image: farm.data().image,
       location: farm.data().location,
@@ -46,7 +46,7 @@ farmHandler.get('/farm/:id', async (req, res) => {
   }
 });
 
-farmHandler.post('/farm', upload.single('image'), async (req, res) => {
+farmHandler.post('/farmers', upload.single('image'), async (req, res) => {
   try {
     const { name, location } = req.body;
     const file = req.file;
@@ -63,7 +63,7 @@ farmHandler.post('/farm', upload.single('image'), async (req, res) => {
 
     const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
 
-    const farm = await admin.firestore().collection('farm').add({
+    const farm = await admin.firestore().collection('farmers').add({
       name,
       image: imageUrl,
       location,
@@ -75,7 +75,7 @@ farmHandler.post('/farm', upload.single('image'), async (req, res) => {
   }
 });
 
-farmHandler.put('/farm/:id', upload.single('image'), async (req, res) => {
+farmHandler.put('/farmers/:id', upload.single('image'), async (req, res) => {
   try {
     const farmId = req.params.id;
     const { name, location } = req.body;
@@ -97,7 +97,7 @@ farmHandler.put('/farm/:id', upload.single('image'), async (req, res) => {
       imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
     }
 
-    const farmDoc = await admin.firestore().collection('farm').doc(farmId).get();
+    const farmDoc = await admin.firestore().collection('farmers').doc(farmId).get();
     if (!farmDoc.exists) {
       return res.status(404).json({ error: 'Pertanian tidak ditemukan' });
     }
@@ -116,7 +116,7 @@ farmHandler.put('/farm/:id', upload.single('image'), async (req, res) => {
       }
     });
 
-    await admin.firestore().collection('farm').doc(farmId).update(updatedFarmData);
+    await admin.firestore().collection('farmers').doc(farmId).update(updatedFarmData);
 
     res.status(200).json({ message: 'Pertanian berhasil diperbarui' });
   } catch (error) {
@@ -125,10 +125,10 @@ farmHandler.put('/farm/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-farmHandler.delete('/farm/:id', async (req, res) => {
+farmHandler.delete('/farmers/:id', async (req, res) => {
   try {
     const farmId = req.params.id;
-    const farm = await admin.firestore().collection('farm').doc(farmId).delete();
+    const farm = await admin.firestore().collection('farmers').doc(farmId).delete();
     res.status(200).json({ message: 'Pertanian berhasil dihapus' });
   } catch (error) {
     console.error('Kesalahan menghapus pertanian:', error);
