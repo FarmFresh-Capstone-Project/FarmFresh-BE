@@ -1,9 +1,13 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
+const multer = require('multer');
 require('dotenv').config();
 
 const userHandler = express.Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 userHandler.get('/users', async (req, res) => {
   try {
@@ -16,11 +20,11 @@ userHandler.get('/users', async (req, res) => {
         image: user.data().image,
         username: user.data().username,
         email: user.data().email,
-        password: user.data().password,
         address: user.data().address,
         hobbies: user.data().hobbies,
         job: user.data().job,
-        skill: user.data().skill,
+        vegetables: user.data().vegetables,
+        cartId: user.data().cartId,
       });
     });
     res.status(200).json(userList);
@@ -39,14 +43,14 @@ userHandler.get('/profiles' , async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        constuserId = decodedToken.userId;
+        const userId = decodedToken.userId;
 
-        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
             return res.status(404).json({ error: 'User tidak ditemukan' });
         }
 
-        constuser =userDoc.data();
+        const user = userDoc.data();
 
         res.status(200).json(user);
     } catch (error) {
@@ -55,7 +59,7 @@ userHandler.get('/profiles' , async (req, res) => {
     }
 });
 
-userHandler.put('/profiles' , async (req, res) => {
+userHandler.put('/profiles', upload.single('image'), async (req, res) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
@@ -64,22 +68,52 @@ userHandler.put('/profiles' , async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        constuserId = decodedToken.userId;
+        const userId = decodedToken.userId;
 
-        const { name, address, hobbies, job, skill } = req.body;
+        const { name, address, hobbies, job, vegetables, username, email } = req.body;
+        const file = req.file;
 
-        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
+        let imageUrl;
+
+        if (file) {
+            const fileName = `${Date.now()}_${file.originalname}`;
+            const bucket = admin.storage().bucket('farm-fresh-d8e1b.appspot.com');
+
+            const fileUpload = bucket.file(fileName);
+            await fileUpload.save(file.buffer, {
+                metadata: {
+                    contentType: file.mimetype,
+                },
+            });
+
+            imageUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
+        }
+
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
             return res.status(404).json({ error: 'User tidak ditemukan' });
         }
 
-        await admin.firestore().collection('users').doc(userId).update({
-            name,
-            address,
-            hobbies,
-            job,
-            skill
+        const existingUserData = userDoc.data();
+
+        const updatedUserData = {
+            name: name || existingUserData.name,
+            username: username || existingUserData.username,
+            email: email || existingUserData.email,
+            address: address || existingUserData.address,
+            hobbies: hobbies || existingUserData.hobbies,
+            job: job || existingUserData.job,
+            vegetables: vegetables || existingUserData.vegetables,
+            image: imageUrl || existingUserData.image,
+        };
+
+        Object.keys(updatedUserData).forEach(key => {
+            if (updatedUserData[key] === undefined) {
+                delete updatedUserData[key];
+            }
         });
+
+        await admin.firestore().collection('users').doc(userId).update(updatedUserData);
 
         res.status(200).json({ message: 'Profil berhasil diperbarui' });
     } catch (error) {
@@ -88,7 +122,7 @@ userHandler.put('/profiles' , async (req, res) => {
     }
 });
 
-userHandler.delete('/profiles' , async (req, res) => {
+userHandler.delete('/profiles', async (req, res) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
@@ -97,15 +131,23 @@ userHandler.delete('/profiles' , async (req, res) => {
 
         const accessToken = authorizationHeader.replace('Bearer ', '');
         const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
-        constuserId = decodedToken.userId;
+        const userId = decodedToken.userId;
 
-        constuserDoc = await admin.firestore().collection('users').doc(userId).get();
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
         if (!userDoc.exists) {
             return res.status(404).json({ error: 'User tidak ditemukan' });
         }
 
-        await admin.firestore().collection('users').doc(userId).delete();
+        const user = userDoc.data();
+        const imageUrl = user.image;
 
+        if (imageUrl) {
+            const fileName = imageUrl.split('/').pop().split('?')[0];
+            const file = admin.storage().bucket().file(`user_images/${fileName}`);
+            await file.delete();
+        }
+
+        await admin.firestore().collection('users').doc(userId).delete();
         await admin.auth().deleteUser(userId);
 
         res.status(200).json({ message: 'User berhasil dihapus' });
@@ -115,4 +157,4 @@ userHandler.delete('/profiles' , async (req, res) => {
     }
 });
 
-module.exports =userHandler;
+module.exports = userHandler;

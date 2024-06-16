@@ -26,6 +26,7 @@ registerHandler.post('/register', async (req, res) => {
             displayName: username,
         });
 
+        const cartId = user.uid;
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await admin.firestore().collection('users').doc(user.uid).set({
@@ -36,7 +37,8 @@ registerHandler.post('/register', async (req, res) => {
             address: '',
             hobbies: '',
             job: '',
-            skill: ''
+            vegetables: '',
+            cartId,
         });
 
         res.status(201).json({ message: 'Registrasi berhasil', user });
