@@ -6,7 +6,12 @@ require('dotenv').config();
 const productHandler = express.Router();
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
 
 productHandler.get('/products', async (req, res) => {
   try {
@@ -22,7 +27,6 @@ productHandler.get('/products', async (req, res) => {
         rate: product.data().rate,
         category: product.data().category,
         type: product.data().type,
-        idFarm: product.data().idFarm,
       });
     });
     res.status(200).json(productList);
@@ -48,7 +52,6 @@ productHandler.get('/products/:id', async (req, res) => {
       rate: product.data().rate,
       category: product.data().category,
       type: product.data().type,
-      idFarm: product.data().idFarm,
     });
   } catch (error) {
     console.error('Kesalahan mengambil produk:', error);
@@ -71,7 +74,6 @@ productHandler.get('/products/type/:type', async (req, res) => {
         rate: product.data().rate,
         category: product.data().category,
         type: product.data().type,
-        idFarm: product.data().idFarm,
       });
     });
     res.status(200).json(productList);
@@ -83,7 +85,7 @@ productHandler.get('/products/type/:type', async (req, res) => {
 
 productHandler.post('/products', upload.single('image'), async (req, res) => {
   try {
-    const { name, price, description, rate, category, type, idFarm } = req.body;
+    const { name, price, description, rate, category, type } = req.body;
     const file = req.file;
 
     const fileName = `${Date.now()}_${file.originalname}`;
@@ -106,7 +108,6 @@ productHandler.post('/products', upload.single('image'), async (req, res) => {
       rate,
       category,
       type,
-      idFarm,
     });
     res.status(201).json({ message: 'Produk berhasil ditambahkan', id: product.id });
   } catch (error) {
@@ -118,7 +119,7 @@ productHandler.post('/products', upload.single('image'), async (req, res) => {
 productHandler.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
     const productId = req.params.id;
-    const { name, price, description, rate, category, type, idFarm } = req.body;
+    const { name, price, description, rate, category, type } = req.body;
     const file = req.file;
 
     let imageUrl;
@@ -151,7 +152,6 @@ productHandler.put('/products/:id', upload.single('image'), async (req, res) => 
       rate: rate || existingProductData.rate,
       category: category || existingProductData.category,
       type: type || existingProductData.type,
-      idFarm: idFarm || existingProductData.idFarm,
       image: imageUrl || existingProductData.image,
     };
 

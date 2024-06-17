@@ -27,6 +27,7 @@ registerHandler.post('/register', async (req, res) => {
         });
 
         const cartId = user.uid;
+        const productId = user.uid;
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await admin.firestore().collection('users').doc(user.uid).set({
@@ -39,6 +40,20 @@ registerHandler.post('/register', async (req, res) => {
             job: '',
             vegetables: '',
             cartId,
+        });
+
+        await admin.firestore().collection('farmers').doc(user.uid).set({
+            username,
+            email,
+            password: hashedPassword,
+            image: '',
+            storeName: '',
+            owner: '',
+            address: '',
+            country: '',
+            contact: '',
+            timeZone: '',
+            productId,
         });
 
         res.status(201).json({ message: 'Registrasi berhasil', user });

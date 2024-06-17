@@ -6,9 +6,9 @@ const registerHandler = require('./handler/register-handler');
 const userHandler = require('./handler/user-handler');
 const productHandler = require('./handler/product-handler');
 const farmHandler = require('./handler/farm-handler');
-const paymentHandler = require('./handler/payment-handler');
 const cartHandler = require('./handler/cart-handler');
 const checkoutHandler = require('./handler/checkout-handler');
+const historyHandler = require('./handler/history-handler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,9 +25,9 @@ app.use('/api', registerHandler);
 app.use('/api', userHandler);
 app.use('/api', productHandler);
 app.use('/api', farmHandler);
-app.use('/api', paymentHandler);
 app.use('/api', cartHandler);
 app.use('/api', checkoutHandler);
+app.use('/api', historyHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

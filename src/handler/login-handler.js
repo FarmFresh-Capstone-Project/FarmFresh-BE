@@ -34,6 +34,9 @@ loginHandler.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Email atau kata sandi salah' });
         }
 
+        const farm = await admin.firestore().collection('farmers').doc(existingUser.uid).get();
+        const idFarm = farm.exists ? farm.id : null;
+
         const accessToken = jwt.sign({ userId: existingUser.uid, username: existingUser.displayName }, process.env.JWT_SECRET, { 
             expiresIn: '24h' 
         });
@@ -41,6 +44,7 @@ loginHandler.post('/login', async (req, res) => {
         res.json({
             message: 'Login berhasil',
             user: { id: existingUser.uid, username: existingUser.displayName },
+            idFarm,
             accessToken,
         });
     } catch (error) {
