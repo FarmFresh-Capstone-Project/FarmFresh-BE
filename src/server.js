@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
   res.send(`
     <h1>Welcome to Farm Fresh API</h1>
-    <p>Base URL: <code>https://farm-fresh-d8e1b.web.app/</code></p>
+    <p>Base URL: <code>https://farmfresh-backend.vercel.app</code></p>
     <h2>Available Endpoints:</h2>
     <h3>Authentication</h3>
     <ul>
