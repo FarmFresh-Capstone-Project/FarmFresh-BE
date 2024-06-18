@@ -39,6 +39,35 @@ checkoutHandler.get('/checkout', async (req, res) => {
   }
 });
 
+checkoutHandler.get('/checkout/:checkoutId', async (req, res) => {
+  try {
+    const { checkoutId } = req.params;
+    const authorizationHeader = req.headers.authorization;
+    if (!authorizationHeader) {
+      return res.status(401).json({ error: 'Token tidak tersedia' });
+    }
+
+    const accessToken = authorizationHeader.replace('Bearer ', '');
+    const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
+    const userId = decodedToken.userId;
+
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User tidak ditemukan' });
+    }
+
+    const checkoutDoc = await admin.firestore().collection('checkout').doc(checkoutId).get();
+    if (!checkoutDoc.exists) {
+      return res.status(404).json({ error: 'Checkout tidak ditemukan' });
+    }
+
+    res.status(200).json(checkoutDoc.data());
+  } catch (error) {
+    console.error('Kesalahan mengambil data checkout:', error);
+    res.status(500).json({ error: 'Kesalahan Server Internal' });
+  }
+});
+
 checkoutHandler.post('/checkout', upload.single('image'), async (req, res) => {
   try {
     const { customer, shipping, items, total } = req.body;

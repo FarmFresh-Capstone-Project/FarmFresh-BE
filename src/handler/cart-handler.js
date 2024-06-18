@@ -183,4 +183,41 @@ cartHandler.delete('/carts/:itemId', async (req, res) => {
   }
 });
 
+cartHandler.delete('/carts', async (req, res) => {
+  try {
+    const authorizationHeader = req.headers.authorization;
+    if (!authorizationHeader) {
+      return res.status(401).json({ error: 'Token tidak tersedia' });
+    }
+
+    const accessToken = authorizationHeader.replace('Bearer ', '');
+    const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
+    const userId = decodedToken.userId;
+
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User tidak ditemukan' });
+    }
+
+    const cartId = userDoc.data().cartId;
+    const cartItemsSnapshot = await admin.firestore().collection('carts').doc(cartId).collection('items').get();
+
+    if (cartItemsSnapshot.empty) {
+      return res.status(404).json({ error: 'Keranjang kosong atau tidak ditemukan' });
+    }
+
+    const batch = admin.firestore().batch();
+    cartItemsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    res.status(200).json({ message: 'Semua item berhasil dihapus dari keranjang' });
+  } catch (error) {
+    console.error('Kesalahan menghapus semua item dari keranjang:', error);
+    res.status(500).json({ error: 'Kesalahan Server Internal' });
+  }
+});
+
 module.exports = cartHandler;
